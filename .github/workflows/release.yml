@@ -1,0 +1,77 @@
+name: Publish release package
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, test, and publish package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Restore API
+        run: dotnet restore backend/SchedulerApp.Api.csproj
+
+      - name: Build API
+        run: dotnet build backend/SchedulerApp.Api.csproj --configuration Release --no-restore
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend unit tests
+        working-directory: frontend
+        run: npm test -- --watch=false
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Assemble release package
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          package_dir="scheduler-app-${RELEASE_TAG}"
+          mkdir -p "${package_dir}/api" "${package_dir}/frontend"
+          dotnet publish backend/SchedulerApp.Api.csproj \
+            --configuration Release \
+            --no-restore \
+            --output "${package_dir}/api"
+          cp -a frontend/dist/frontend/browser/. "${package_dir}/frontend/"
+          cp release/README.md "${package_dir}/README.md"
+          test -f "${package_dir}/api/SchedulerApp.Api.dll"
+          test -f "${package_dir}/frontend/index.html"
+          zip -qr "${package_dir}.zip" "${package_dir}"
+          echo "PACKAGE_NAME=${package_dir}.zip" >> "$GITHUB_ENV"
+
+      - name: Publish GitHub release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$PACKAGE_NAME" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$PACKAGE_NAME" \
+              --title "Scheduler App $GITHUB_REF_NAME" \
+              --generate-notes
+          fi

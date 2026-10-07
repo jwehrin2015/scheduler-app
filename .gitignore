@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/.angular/
+backend/scheduler.db
+backend/scheduler.db-shm
+backend/scheduler.db-wal
+.DS_Store

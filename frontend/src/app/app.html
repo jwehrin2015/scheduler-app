@@ -1,0 +1,243 @@
+<main class="app-shell">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">TEAM PLANNER</p>
+      <h1>Weekly schedule</h1>
+      <p class="intro">Plan your team's week and keep every shift covered.</p>
+    </div>
+    <button class="today-button" type="button" (click)="goToThisWeek()">Today</button>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="notification error-message" role="alert">{{ errorMessage() }}</p>
+  }
+  @if (successMessage()) {
+    <p class="notification success-message" role="status">{{ successMessage() }}</p>
+  }
+
+  <section class="schedule-panel" aria-labelledby="schedule-heading">
+    <div class="schedule-toolbar">
+      <div>
+        <p class="eyebrow">SCHEDULE</p>
+        <h2 id="schedule-heading">{{ weekLabel() }}</h2>
+      </div>
+      <div class="week-navigation" aria-label="Schedule week navigation">
+        <button type="button" aria-label="Previous week" (click)="moveWeek(-1)">‹</button>
+        <button type="button" aria-label="Next week" (click)="moveWeek(1)">›</button>
+      </div>
+    </div>
+
+    <div class="calendar-scroll">
+      <div class="week-grid">
+        @for (day of weekDays(); track day.key) {
+          <section class="day-column" [attr.aria-label]="day.date | date:'EEEE, MMMM d'">
+            <header class="day-heading">
+              <span>{{ day.date | date:'EEE' }}</span>
+              <strong>{{ day.date | date:'d' }}</strong>
+            </header>
+            <div class="day-shifts">
+              @if (loading()) {
+                <p class="empty-day">Loading…</p>
+              } @else if (shiftsForDay(day.key).length === 0) {
+                <p class="empty-day">No shifts</p>
+              } @else {
+                @for (shift of shiftsForDay(day.key); track shift.id) {
+                  <article class="shift-card">
+                    <div class="shift-time">
+                      {{ displayTime(shift.startTime) }}–{{ displayTime(shift.endTime) }}
+                    </div>
+                    <div class="shift-employee">{{ employeeName(employeeFor(shift.employeeId)) }}</div>
+                    @if (employeeFor(shift.employeeId)?.jobTitle) {
+                      <div class="shift-role">{{ employeeFor(shift.employeeId)?.jobTitle }}</div>
+                    }
+                    <div class="shift-actions">
+                      <button type="button" (click)="editShift(shift)">Edit</button>
+                      <button
+                        type="button"
+                        [disabled]="busyShiftId() !== null"
+                        (click)="deleteShift(shift)"
+                      >
+                        {{ busyShiftId() === shift.id ? 'Removing…' : 'Remove' }}
+                      </button>
+                    </div>
+                  </article>
+                }
+              }
+            </div>
+            <button class="add-day-shift" type="button" (click)="newShiftFor(day.key)">
+              + Add shift
+            </button>
+          </section>
+        }
+      </div>
+    </div>
+    <p class="schedule-hint">A person can't be assigned overlapping shifts.</p>
+  </section>
+
+  <div class="management-grid">
+    <section class="management-panel" aria-labelledby="employees-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">YOUR TEAM</p>
+          <h2 id="employees-heading">Employees</h2>
+        </div>
+        <span class="count-badge">{{ employees().length }}</span>
+      </div>
+
+      <form class="data-form" (ngSubmit)="saveEmployee()">
+        <h3>{{ editingEmployeeId() === null ? 'Add an employee' : 'Update employee' }}</h3>
+        <div class="form-row">
+          <label>
+            First name
+            <input
+              name="firstName"
+              [(ngModel)]="employeeForm.firstName"
+              autocomplete="given-name"
+              maxlength="100"
+              required
+            />
+          </label>
+          <label>
+            Last name
+            <input
+              name="lastName"
+              [(ngModel)]="employeeForm.lastName"
+              autocomplete="family-name"
+              maxlength="100"
+              required
+            />
+          </label>
+        </div>
+        <label>
+          Job title <span class="optional">(optional)</span>
+          <input name="jobTitle" [(ngModel)]="employeeForm.jobTitle" maxlength="100" />
+        </label>
+        <div class="form-row">
+          <label>
+            Email <span class="optional">(optional)</span>
+            <input name="email" type="email" [(ngModel)]="employeeForm.email" maxlength="200" />
+          </label>
+          <label>
+            Phone <span class="optional">(optional)</span>
+            <input
+              name="contactPhoneNumber"
+              type="tel"
+              [(ngModel)]="employeeForm.contactPhoneNumber"
+              maxlength="40"
+            />
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="primary-button" type="submit" [disabled]="savingEmployee()">
+            {{
+              savingEmployee()
+                ? 'Saving…'
+                : editingEmployeeId() === null
+                  ? 'Add employee'
+                  : 'Save changes'
+            }}
+          </button>
+          @if (editingEmployeeId() !== null) {
+            <button class="quiet-button" type="button" (click)="cancelEmployeeEdit()">Cancel</button>
+          }
+        </div>
+      </form>
+
+      <ul class="employee-list">
+        @if (employees().length === 0) {
+          <li class="empty-team">Add your first employee to start building the schedule.</li>
+        } @else {
+          @for (employee of employees(); track employee.id) {
+            <li class="employee-row">
+              <div class="employee-avatar" aria-hidden="true">
+                {{ employee.firstName.charAt(0) }}{{ employee.lastName.charAt(0) }}
+              </div>
+              <div class="employee-details">
+                <strong>{{ employeeName(employee) }}</strong>
+                <span>{{ employee.jobTitle || employee.email || 'Team member' }}</span>
+              </div>
+              <div class="employee-actions">
+                <button type="button" (click)="startEmployeeEdit(employee)">Edit</button>
+                <button
+                  type="button"
+                  [disabled]="busyEmployeeId() !== null"
+                  (click)="deleteEmployee(employee)"
+                >
+                  {{ busyEmployeeId() === employee.id ? 'Removing…' : 'Remove' }}
+                </button>
+              </div>
+            </li>
+          }
+        }
+      </ul>
+      <p class="schedule-hint">Employees with scheduled shifts must have those shifts removed first.</p>
+    </section>
+
+    <section class="management-panel shift-editor" aria-labelledby="shift-form-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">SHIFT DETAILS</p>
+          <h2 id="shift-form-heading">
+            {{ editingShiftId() === null ? 'Schedule a shift' : 'Update shift' }}
+          </h2>
+        </div>
+      </div>
+
+      @if (employees().length === 0) {
+        <p class="empty-team">Add an employee before scheduling a shift.</p>
+      } @else {
+        <form class="data-form" (ngSubmit)="saveShift()">
+          <label>
+            Employee
+            <select name="employeeId" [(ngModel)]="shiftForm.employeeId" required>
+              <option [ngValue]="0" disabled>Select an employee</option>
+              @for (employee of employees(); track employee.id) {
+                <option [ngValue]="employee.id">{{ employeeName(employee) }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Date
+            <input name="date" type="date" [(ngModel)]="shiftForm.date" required />
+          </label>
+          <div class="form-row">
+            <label>
+              Starts
+              <input name="startTime" type="time" [(ngModel)]="shiftForm.startTime" required />
+            </label>
+            <label>
+              Ends
+              <input name="endTime" type="time" [(ngModel)]="shiftForm.endTime" required />
+            </label>
+          </div>
+          @if (
+            shiftForm.startTime &&
+            shiftForm.endTime &&
+            shiftForm.endTime <= shiftForm.startTime
+          ) {
+            <p class="field-error">End time must be later than start time.</p>
+          }
+          <div class="form-actions">
+            <button
+              class="primary-button"
+              type="submit"
+              [disabled]="savingShift() || shiftForm.endTime <= shiftForm.startTime"
+            >
+              {{
+                savingShift()
+                  ? 'Saving…'
+                  : editingShiftId() === null
+                    ? 'Add shift'
+                    : 'Save changes'
+              }}
+            </button>
+            @if (editingShiftId() !== null) {
+              <button class="quiet-button" type="button" (click)="cancelShiftEdit()">Cancel</button>
+            }
+          </div>
+        </form>
+        <p class="schedule-hint">Shifts are entered for one date and cannot cross midnight.</p>
+      }
+    </section>
+  </div>
+</main>

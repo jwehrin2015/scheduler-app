@@ -1,0 +1,95 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build: api",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build", "backend/SchedulerApp.Api.csproj"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "build: frontend",
+      "type": "process",
+      "command": "npm",
+      "args": ["run", "build"],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "group": "build",
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "build: scheduler",
+      "dependsOn": ["build: api", "build: frontend"],
+      "dependsOrder": "parallel",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "test: frontend",
+      "type": "process",
+      "command": "npm",
+      "args": ["test", "--", "--watch=false"],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "run: api",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--no-launch-profile",
+        "--project",
+        "backend/SchedulerApp.Api.csproj",
+        "--",
+        "--urls",
+        "http://localhost:5000"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "base": "$msCompile",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Building.*$",
+          "endsPattern": "^.*Now listening on: http://localhost:5000.*$"
+        }
+      }
+    },
+    {
+      "label": "run: frontend",
+      "type": "process",
+      "command": "npm",
+      "args": ["start", "--", "--host", "localhost"],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "base": "$tsc",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*ng serve.*$",
+          "endsPattern": "^.*http://localhost:4200/.*$"
+        }
+      }
+    },
+    {
+      "label": "run: scheduler",
+      "dependsOn": ["run: api", "run: frontend"],
+      "dependsOrder": "parallel"
+    }
+  ]
+}
