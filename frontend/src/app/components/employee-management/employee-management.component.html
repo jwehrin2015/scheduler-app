@@ -1,0 +1,93 @@
+<section class="management-panel" aria-labelledby="employees-heading">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">YOUR TEAM</p>
+      <h2 id="employees-heading">Employees</h2>
+    </div>
+    <span class="count-badge">{{ employees.length }}</span>
+  </div>
+
+  <form class="data-form" (ngSubmit)="save.emit()">
+    <h3>{{ editingEmployeeId === null ? 'Add an employee' : 'Update employee' }}</h3>
+    <div class="form-row">
+      <label>
+        First name
+        <input
+          name="firstName"
+          [(ngModel)]="employeeForm.firstName"
+          autocomplete="given-name"
+          maxlength="100"
+          required
+        />
+      </label>
+      <label>
+        Last name
+        <input
+          name="lastName"
+          [(ngModel)]="employeeForm.lastName"
+          autocomplete="family-name"
+          maxlength="100"
+          required
+        />
+      </label>
+    </div>
+    <label>
+      Job title <span class="optional">(optional)</span>
+      <input name="jobTitle" [(ngModel)]="employeeForm.jobTitle" maxlength="100" />
+    </label>
+    <div class="form-row">
+      <label>
+        Email <span class="optional">(optional)</span>
+        <input name="email" type="email" [(ngModel)]="employeeForm.email" maxlength="200" />
+      </label>
+      <label>
+        Phone <span class="optional">(optional)</span>
+        <input
+          name="contactPhoneNumber"
+          type="tel"
+          [(ngModel)]="employeeForm.contactPhoneNumber"
+          maxlength="40"
+        />
+      </label>
+    </div>
+    <div class="form-actions">
+      <button class="primary-button" type="submit" [disabled]="savingEmployee">
+        {{
+          savingEmployee ? 'Saving…' : editingEmployeeId === null ? 'Add employee' : 'Save changes'
+        }}
+      </button>
+      @if (editingEmployeeId !== null) {
+        <button class="quiet-button" type="button" (click)="cancelEdit.emit()">Cancel</button>
+      }
+    </div>
+  </form>
+
+  <ul class="employee-list">
+    @if (employees.length === 0) {
+      <li class="empty-team">Add your first employee to start building the schedule.</li>
+    } @else {
+      @for (employee of employees; track employee.id) {
+        <li class="employee-row">
+          <div class="employee-avatar" aria-hidden="true">
+            {{ employee.firstName.charAt(0) }}{{ employee.lastName.charAt(0) }}
+          </div>
+          <div class="employee-details">
+            <strong>{{ employeeName(employee) }}</strong>
+            <span>{{ employee.jobTitle || employee.email || 'Team member' }}</span>
+          </div>
+          <div class="employee-actions">
+            <button type="button" (click)="startEdit.emit(employee)">Edit</button>
+            <button
+              type="button"
+              [disabled]="busyEmployeeId !== null"
+              (click)="remove.emit(employee)"
+            >
+              {{ busyEmployeeId === employee.id ? 'Removing…' : 'Remove' }}
+            </button>
+          </div>
+        </li>
+      }
+    }
+  </ul>
+  <p class="schedule-hint">Employees with scheduled shifts must have those shifts removed first.</p>
+</section>

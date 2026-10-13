@@ -1,0 +1,72 @@
+.employee-list {
+  display: grid;
+  gap: 2px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.employee-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 2px;
+  border-top: 1px solid #35323f;
+}
+
+.employee-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: #343046;
+  color: #d5caff;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.employee-details {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+
+.employee-details strong {
+  overflow: hidden;
+  color: #eeecf3;
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employee-details span {
+  overflow: hidden;
+  color: #898692;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employee-actions {
+  display: flex;
+  flex: none;
+  gap: 9px;
+}
+
+.employee-actions button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #b7a7f4;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.employee-actions button:last-child {
+  color: #d4a2b5;
+}

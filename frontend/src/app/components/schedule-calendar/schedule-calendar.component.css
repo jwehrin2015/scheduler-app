@@ -1,0 +1,239 @@
+.schedule-panel {
+  padding: 24px;
+}
+
+.schedule-toolbar,
+.schedule-controls,
+.week-navigation {
+  display: flex;
+  align-items: center;
+}
+
+.schedule-toolbar {
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 21px;
+}
+
+.schedule-toolbar h2 {
+  margin: 0;
+  color: #f1eff6;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.schedule-controls {
+  gap: 14px;
+}
+
+.view-switch {
+  display: flex;
+  padding: 3px;
+  border: 1px solid #403d4b;
+  border-radius: 8px;
+  background: #191820;
+}
+
+.view-switch button {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #a5a3af;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.view-switch button[aria-pressed='true'] {
+  background: #39334c;
+  color: #e0d7ff;
+}
+
+.week-navigation {
+  gap: 7px;
+}
+
+.week-navigation button {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 1px solid #403d4b;
+  border-radius: 8px;
+  background: #211f29;
+  color: #e5e1ee;
+  font: inherit;
+  font-size: 1.45rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.week-navigation button:hover {
+  border-color: #8572c2;
+  background: #2b2737;
+}
+
+.calendar-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.calendar-grid {
+  display: grid;
+  min-width: 840px;
+  grid-template-columns: repeat(7, minmax(105px, 1fr));
+  border: 1px solid #393643;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.month-grid {
+  grid-auto-rows: minmax(145px, auto);
+}
+
+.day-column {
+  display: flex;
+  min-height: 255px;
+  flex-direction: column;
+  border-right: 1px solid #393643;
+  background: #1a1921;
+}
+
+.day-column.outside-month {
+  background: #17161d;
+}
+
+.day-column.outside-month .day-heading {
+  color: #66636e;
+}
+
+.day-column.outside-month .day-heading strong {
+  background: #24222b;
+  color: #898692;
+}
+
+.day-column:last-child {
+  border-right: 0;
+}
+
+.day-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 10px;
+  border-bottom: 1px solid #393643;
+  color: #a5a3af;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.day-heading strong {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: #302b40;
+  color: #d9ceff;
+  font-size: 0.8125rem;
+}
+
+.day-shifts {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  flex: 1;
+  padding: 8px;
+}
+
+.empty-day {
+  margin: 11px 0;
+  color: #73717d;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.shift-card {
+  padding: 9px;
+  border: 1px solid #51456f;
+  border-left: 3px solid #a18aff;
+  border-radius: 7px;
+  background: #292536;
+}
+
+.shift-time {
+  color: #cfc1ff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.shift-employee {
+  margin-top: 5px;
+  color: #f0edf7;
+  font-size: 0.75rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.shift-role {
+  margin-top: 2px;
+  color: #aaa6b7;
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
+}
+
+.shift-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.shift-actions button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #b7a7f4;
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.shift-actions button:last-child {
+  color: #d4a2b5;
+}
+
+.add-day-shift {
+  margin: 0 8px 9px;
+  padding: 7px 4px;
+  border: 1px dashed #45414f;
+  border-radius: 6px;
+  background: transparent;
+  color: #aaa3bb;
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.add-day-shift:hover {
+  border-color: #8572c2;
+  color: #e0d7ff;
+}
+
+@media (max-width: 600px) {
+  .schedule-panel {
+    padding: 17px;
+  }
+
+  .schedule-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .schedule-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

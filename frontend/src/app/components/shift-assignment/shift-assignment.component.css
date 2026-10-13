@@ -1,0 +1,9 @@
+.shift-editor > .empty-team {
+  margin-top: 12px;
+}
+
+.field-error {
+  margin: -4px 0 0;
+  color: #ff9da9;
+  font-size: 0.75rem;
+}

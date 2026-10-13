@@ -1,0 +1,94 @@
+<section class="schedule-panel" aria-labelledby="schedule-heading">
+  <div class="schedule-toolbar">
+    <div>
+      <p class="eyebrow">SCHEDULE</p>
+      <h2 id="schedule-heading">{{ scheduleLabel }}</h2>
+    </div>
+    <div class="schedule-controls">
+      <div class="view-switch" role="group" aria-label="Schedule view">
+        <button
+          type="button"
+          [attr.aria-pressed]="scheduleView === 'week'"
+          (click)="viewChange.emit('week')"
+        >
+          Week
+        </button>
+        <button
+          type="button"
+          [attr.aria-pressed]="scheduleView === 'month'"
+          (click)="viewChange.emit('month')"
+        >
+          Month
+        </button>
+      </div>
+      <div class="week-navigation" [attr.aria-label]="'Schedule ' + scheduleView + ' navigation'">
+        <button
+          type="button"
+          [attr.aria-label]="'Previous ' + scheduleView"
+          (click)="navigate.emit(-1)"
+        >
+          ‹
+        </button>
+        <button type="button" [attr.aria-label]="'Next ' + scheduleView" (click)="navigate.emit(1)">
+          ›
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="calendar-scroll">
+    <div
+      class="calendar-grid"
+      [class.month-grid]="scheduleView === 'month'"
+      [class.week-grid]="scheduleView === 'week'"
+    >
+      @for (day of days; track day.key) {
+        <section
+          class="day-column"
+          [class.outside-month]="scheduleView === 'month' && isOutsideCurrentMonth(day.date)"
+          [attr.aria-label]="day.date | date: 'EEEE, MMMM d'"
+        >
+          <header class="day-heading">
+            <span>{{ day.date | date: 'EEE' }}</span>
+            <strong>{{ day.date | date: 'd' }}</strong>
+          </header>
+          <div class="day-shifts">
+            @if (loading) {
+              <p class="empty-day">Loading…</p>
+            } @else if (shiftsForDay(day.key).length === 0) {
+              <p class="empty-day">No shifts</p>
+            } @else {
+              @for (shift of shiftsForDay(day.key); track shift.id) {
+                <article class="shift-card">
+                  <div class="shift-time">
+                    {{ displayTime(shift.startTime) }}–{{ displayTime(shift.endTime) }}
+                  </div>
+                  <div class="shift-employee">
+                    {{ employeeName(employeeFor(shift.employeeId)) }}
+                  </div>
+                  @if (employeeFor(shift.employeeId)?.jobTitle) {
+                    <div class="shift-role">{{ employeeFor(shift.employeeId)?.jobTitle }}</div>
+                  }
+                  <div class="shift-actions">
+                    <button type="button" (click)="editShift.emit(shift)">Edit</button>
+                    <button
+                      type="button"
+                      [disabled]="busyShiftId !== null"
+                      (click)="removeShift.emit(shift)"
+                    >
+                      {{ busyShiftId === shift.id ? 'Removing…' : 'Remove' }}
+                    </button>
+                  </div>
+                </article>
+              }
+            }
+          </div>
+          <button class="add-day-shift" type="button" (click)="addShift.emit(day.key)">
+            + Add shift
+          </button>
+        </section>
+      }
+    </div>
+  </div>
+  <p class="schedule-hint">A person can't be assigned overlapping shifts.</p>
+</section>

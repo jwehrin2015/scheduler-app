@@ -96,9 +96,7 @@ describe('App', () => {
   });
 
   it('creates a shift for the selected employee and date', async () => {
-    const dateInput = fixture.nativeElement.querySelector(
-      'input[name="date"]',
-    ) as HTMLInputElement;
+    const dateInput = fixture.nativeElement.querySelector('input[name="date"]') as HTMLInputElement;
     dateInput.value = '2026-10-08';
     dateInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
@@ -132,9 +130,9 @@ describe('App', () => {
     lastName.value = 'Hopper';
     lastName.dispatchEvent(new Event('input'));
     fixture.detectChanges();
-    fixture.nativeElement.querySelector('.management-panel form').dispatchEvent(
-      new Event('submit'),
-    );
+    fixture.nativeElement
+      .querySelector('.management-panel form')
+      .dispatchEvent(new Event('submit'));
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -162,8 +160,11 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(
-      (fixture.nativeElement.querySelector('.shift-editor button[type="submit"]') as HTMLButtonElement)
-        .disabled,
+      (
+        fixture.nativeElement.querySelector(
+          '.shift-editor button[type="submit"]',
+        ) as HTMLButtonElement
+      ).disabled,
     ).toBe(true);
     expect(schedulerService.createShift).not.toHaveBeenCalled();
   });
@@ -210,5 +211,34 @@ describe('App', () => {
 
     expect(schedulerService.getShifts).toHaveBeenCalledTimes(2);
     expect(schedulerService.getShifts.mock.calls[1][0]).not.toBe(previousStart);
+  });
+
+  it('switches to a navigable monthly calendar and requests its visible date range', async () => {
+    (
+      fixture.nativeElement.querySelector('.view-switch button:nth-child(2)') as HTMLButtonElement
+    ).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const [startDate, endDate] = schedulerService.getShifts.mock.calls[1];
+    const visibleDays = fixture.nativeElement.querySelectorAll('.day-column');
+    expect(visibleDays.length).toBeGreaterThanOrEqual(28);
+    expect(visibleDays.length).toBeLessThanOrEqual(42);
+    expect(visibleDays.length).toBe(
+      Number(
+        (Date.parse(`${endDate}T00:00:00`) - Date.parse(`${startDate}T00:00:00`)) / 86_400_000,
+      ) + 1,
+    );
+    expect(fixture.nativeElement.textContent).toContain('Monthly schedule');
+    expect(
+      (
+        fixture.nativeElement.querySelector('.view-switch button:nth-child(2)') as HTMLButtonElement
+      ).getAttribute('aria-pressed'),
+    ).toBe('true');
+
+    (fixture.nativeElement.querySelector('[aria-label="Next month"]') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(schedulerService.getShifts).toHaveBeenCalledTimes(3);
+    expect(schedulerService.getShifts.mock.calls[2][0]).not.toBe(startDate);
   });
 });

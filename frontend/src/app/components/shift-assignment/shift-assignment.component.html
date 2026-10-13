@@ -1,0 +1,56 @@
+<section class="management-panel shift-editor" aria-labelledby="shift-form-heading">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">SHIFT DETAILS</p>
+      <h2 id="shift-form-heading">
+        {{ editingShiftId === null ? 'Schedule a shift' : 'Update shift' }}
+      </h2>
+    </div>
+  </div>
+
+  @if (employees.length === 0) {
+    <p class="empty-team">Add an employee before scheduling a shift.</p>
+  } @else {
+    <form class="data-form" (ngSubmit)="save.emit()">
+      <label>
+        Employee
+        <select name="employeeId" [(ngModel)]="shiftForm.employeeId" required>
+          <option [ngValue]="0" disabled>Select an employee</option>
+          @for (employee of employees; track employee.id) {
+            <option [ngValue]="employee.id">{{ employeeName(employee) }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        Date
+        <input name="date" type="date" [(ngModel)]="shiftForm.date" required />
+      </label>
+      <div class="form-row">
+        <label>
+          Starts
+          <input name="startTime" type="time" [(ngModel)]="shiftForm.startTime" required />
+        </label>
+        <label>
+          Ends
+          <input name="endTime" type="time" [(ngModel)]="shiftForm.endTime" required />
+        </label>
+      </div>
+      @if (shiftForm.startTime && shiftForm.endTime && shiftForm.endTime <= shiftForm.startTime) {
+        <p class="field-error">End time must be later than start time.</p>
+      }
+      <div class="form-actions">
+        <button
+          class="primary-button"
+          type="submit"
+          [disabled]="savingShift || shiftForm.endTime <= shiftForm.startTime"
+        >
+          {{ savingShift ? 'Saving…' : editingShiftId === null ? 'Add shift' : 'Save changes' }}
+        </button>
+        @if (editingShiftId !== null) {
+          <button class="quiet-button" type="button" (click)="cancelEdit.emit()">Cancel</button>
+        }
+      </div>
+    </form>
+    <p class="schedule-hint">Shifts are entered for one date and cannot cross midnight.</p>
+  }
+</section>

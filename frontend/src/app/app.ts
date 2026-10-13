@@ -1,7 +1,5 @@
-import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import {
   Employee,
   EmployeeRequest,
@@ -9,14 +7,19 @@ import {
   Shift,
   ShiftRequest,
 } from './scheduler.service';
-
-interface WeekDay {
-  date: Date;
-  key: string;
-}
+import { EmployeeManagementComponent } from './components/employee-management/employee-management.component';
+import {
+  ScheduleCalendarComponent,
+  ScheduleDay,
+  ScheduleView,
+  startOfWeek,
+  dateKey,
+  timeInputValue,
+} from './components/schedule-calendar/schedule-calendar.component';
+import { ShiftAssignmentComponent } from './components/shift-assignment/shift-assignment.component';
 
 @Component({
-  imports: [DatePipe, FormsModule],
+  imports: [ScheduleCalendarComponent, EmployeeManagementComponent, ShiftAssignmentComponent],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
@@ -26,7 +29,8 @@ export class App implements OnInit {
 
   protected readonly employees = signal<Employee[]>([]);
   protected readonly shifts = signal<Shift[]>([]);
-  protected readonly weekStart = signal(startOfWeek(new Date()));
+  protected readonly viewDate = signal(new Date());
+  protected readonly scheduleView = signal<ScheduleView>('week');
   protected readonly loading = signal(true);
   protected readonly savingEmployee = signal(false);
   protected readonly savingShift = signal(false);
@@ -36,20 +40,44 @@ export class App implements OnInit {
   protected readonly successMessage = signal('');
   protected readonly editingEmployeeId = signal<number | null>(null);
   protected readonly editingShiftId = signal<number | null>(null);
-  protected readonly weekDays = computed<WeekDay[]>(() =>
+  protected readonly weekDays = computed<ScheduleDay[]>(() =>
     Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(this.weekStart());
+      const date = startOfWeek(this.viewDate());
       date.setDate(date.getDate() + index);
       return { date, key: dateKey(date) };
     }),
   );
-  protected readonly weekLabel = computed(() => {
+  protected readonly monthDays = computed<ScheduleDay[]>(() => {
+    const date = this.viewDate();
+    const firstOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const firstVisibleDate = startOfWeek(firstOfMonth);
+    const lastOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    const lastVisibleDate = new Date(lastOfMonth);
+    lastVisibleDate.setDate(lastVisibleDate.getDate() + 6 - ((lastVisibleDate.getDay() + 6) % 7));
+    const dayCount = (lastVisibleDate.getTime() - firstVisibleDate.getTime()) / 86_400_000 + 1;
+
+    return Array.from({ length: dayCount }, (_, index) => {
+      const day = new Date(firstVisibleDate);
+      day.setDate(day.getDate() + index);
+      return { date: day, key: dateKey(day) };
+    });
+  });
+  protected readonly displayedDays = computed(() =>
+    this.scheduleView() === 'week' ? this.weekDays() : this.monthDays(),
+  );
+  protected readonly scheduleLabel = computed(() => {
+    if (this.scheduleView() === 'month') {
+      return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(
+        this.viewDate(),
+      );
+    }
     const days = this.weekDays();
     const first = days[0].date;
     const last = days[6].date;
-    const firstLabel = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(
-      first,
-    );
+    const firstLabel = new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+    }).format(first);
     const lastLabel = new Intl.DateTimeFormat(undefined, {
       month: first.getMonth() === last.getMonth() ? undefined : 'short',
       day: 'numeric',
@@ -72,35 +100,28 @@ export class App implements OnInit {
   }
 
   protected moveWeek(offset: number): void {
-    const date = new Date(this.weekStart());
-    date.setDate(date.getDate() + offset * 7);
-    this.weekStart.set(date);
+    const date = new Date(this.viewDate());
+    if (this.scheduleView() === 'week') {
+      date.setDate(date.getDate() + offset * 7);
+    } else {
+      date.setDate(1);
+      date.setMonth(date.getMonth() + offset);
+    }
+    this.viewDate.set(date);
     this.loadShifts();
   }
 
-  protected goToThisWeek(): void {
-    this.weekStart.set(startOfWeek(new Date()));
+  protected setScheduleView(view: ScheduleView): void {
+    if (view === this.scheduleView()) {
+      return;
+    }
+    this.scheduleView.set(view);
     this.loadShifts();
   }
 
-  protected shiftsForDay(date: string): Shift[] {
-    return this.shifts()
-      .filter((shift) => shift.date === date)
-      .sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }
-
-  protected employeeFor(id: number): Employee | undefined {
-    return this.employees().find((employee) => employee.id === id);
-  }
-
-  protected employeeName(employee: Employee | undefined): string {
-    return employee
-      ? [employee.firstName, employee.lastName].filter(Boolean).join(' ')
-      : 'Unknown employee';
-  }
-
-  protected displayTime(time: string): string {
-    return time.slice(0, 5);
+  protected goToToday(): void {
+    this.viewDate.set(new Date());
+    this.loadShifts();
   }
 
   protected startEmployeeEdit(employee: Employee): void {
@@ -137,9 +158,10 @@ export class App implements OnInit {
     this.savingEmployee.set(true);
     this.clearNotifications();
     const employeeId = this.editingEmployeeId();
-    const operation = employeeId === null
-      ? this.schedulerService.createEmployee(request)
-      : this.schedulerService.updateEmployee(employeeId, request);
+    const operation =
+      employeeId === null
+        ? this.schedulerService.createEmployee(request)
+        : this.schedulerService.updateEmployee(employeeId, request);
     operation.subscribe({
       next: (employee) => {
         this.employees.update((employees) => {
@@ -149,8 +171,7 @@ export class App implements OnInit {
               : employees.map((item) => (item.id === employee.id ? employee : item));
           return updated.sort(
             (a, b) =>
-              a.lastName.localeCompare(b.lastName) ||
-              a.firstName.localeCompare(b.firstName),
+              a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName),
           );
         });
         if (employeeId === null && !this.shiftForm.employeeId) {
@@ -201,8 +222,8 @@ export class App implements OnInit {
     this.shiftForm = {
       employeeId: shift.employeeId,
       date: shift.date,
-      startTime: this.displayTime(shift.startTime),
-      endTime: this.displayTime(shift.endTime),
+      startTime: timeInputValue(shift.startTime),
+      endTime: timeInputValue(shift.endTime),
     };
     this.clearNotifications();
   }
@@ -238,15 +259,15 @@ export class App implements OnInit {
     this.savingShift.set(true);
     this.clearNotifications();
     const shiftId = this.editingShiftId();
-    const operation = shiftId === null
-      ? this.schedulerService.createShift(this.shiftForm)
-      : this.schedulerService.updateShift(shiftId, this.shiftForm);
+    const operation =
+      shiftId === null
+        ? this.schedulerService.createShift(this.shiftForm)
+        : this.schedulerService.updateShift(shiftId, this.shiftForm);
     operation.subscribe({
       next: (shift) => {
-        const targetWeek = startOfWeek(new Date(`${shift.date}T00:00:00`));
-        const weekChanged = dateKey(targetWeek) !== dateKey(this.weekStart());
-        if (weekChanged) {
-          this.weekStart.set(targetWeek);
+        const isVisible = this.displayedDays().some((day) => day.key === shift.date);
+        if (!isVisible) {
+          this.viewDate.set(new Date(`${shift.date}T00:00:00`));
           this.loadShifts();
         } else {
           this.shifts.update((shifts) =>
@@ -301,8 +322,9 @@ export class App implements OnInit {
   }
 
   private loadShifts(): void {
-    const start = dateKey(this.weekStart());
-    const end = dateKey(this.weekDays()[6].date);
+    const days = this.displayedDays();
+    const start = days[0].key;
+    const end = days[days.length - 1].key;
     this.loading.set(true);
     this.schedulerService.getShifts(start, end).subscribe({
       next: (shifts) => {
@@ -310,7 +332,7 @@ export class App implements OnInit {
         this.loading.set(false);
       },
       error: (error: HttpErrorResponse) => {
-        this.errorMessage.set(this.describeError(error, "Unable to load this week's schedule."));
+        this.errorMessage.set(this.describeError(error, 'Unable to load the schedule.'));
         this.loading.set(false);
       },
     });
@@ -331,16 +353,3 @@ function emptyEmployee(): EmployeeRequest {
   return { firstName: '', lastName: '', jobTitle: '', email: '', contactPhoneNumber: '' };
 }
 
-function startOfWeek(date: Date): Date {
-  const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const daysSinceMonday = (result.getDay() + 6) % 7;
-  result.setDate(result.getDate() - daysSinceMonday);
-  return result;
-}
-
-function dateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
