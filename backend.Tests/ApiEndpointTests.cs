@@ -260,7 +260,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 
             using var scope = services.BuildServiceProvider().CreateScope();
             var database = scope.ServiceProvider.GetRequiredService<SchedulerDbContext>();
-            database.Database.EnsureCreated();
+            database.Database.Migrate();
         });
     }
 }

@@ -1,14 +1,13 @@
-using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using SchedulerApp.Api.Data;
 using SchedulerApp.Api.Endpoints;
-using SchedulerApp.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
-var databasePath = Path.Combine(builder.Environment.ContentRootPath, "scheduler.db");
+var connectionString = builder.Configuration.GetConnectionString("Scheduler")
+    ?? $"Data Source={Path.Combine(builder.Environment.ContentRootPath, "scheduler.db")}";
 
 builder.Services.AddDbContext<SchedulerDbContext>(options =>
-    options.UseSqlite($"Data Source={databasePath}"));
+    options.UseSqlite(connectionString));
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularDevelopment", policy =>
@@ -18,6 +17,12 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var database = scope.ServiceProvider.GetRequiredService<SchedulerDbContext>();
+    await database.Database.MigrateAsync();
+}
+
 app.UseCors("AngularDevelopment");
 app.MapEmployeesEndpoints();
 app.MapShiftsEndpoints();
