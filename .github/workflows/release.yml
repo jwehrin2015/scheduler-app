@@ -5,13 +5,38 @@ on:
     tags:
       - "v*"
 
-permissions:
-  contents: write
-
 jobs:
+  verify-tag:
+    name: Verify tag is on main
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      is_on_main: ${{ steps.verify.outputs.is_on_main }}
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check whether tagged commit is on main
+        id: verify
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          if git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "is_on_main=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tag commit is not on the main branch; skipping release."
+            echo "is_on_main=false" >> "$GITHUB_OUTPUT"
+          fi
+
   release:
     name: Build, test, and publish package
+    needs: verify-tag
+    if: needs.verify-tag.outputs.is_on_main == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Check out source
@@ -51,9 +76,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          # Check if the tag commit is ancestor/part of the 'main' branch
-          if git branch -r --contains ${{ github.ref }} | grep -q "origin/main"; then
-            package_dir="scheduler-app-${RELEASE_TAG}"
+          package_dir="scheduler-app-${RELEASE_TAG}"
           mkdir -p "${package_dir}/api" "${package_dir}/frontend"
           dotnet publish backend/SchedulerApp.Api.csproj \
             --configuration Release \
@@ -65,10 +88,6 @@ jobs:
           test -f "${package_dir}/frontend/index.html"
           zip -qr "${package_dir}.zip" "${package_dir}"
           echo "PACKAGE_NAME=${package_dir}.zip" >> "$GITHUB_ENV"
-          else
-            echo "Tag commit is not part of the 'main' branch. Aborting release package assembly."
-            exit 1
-          fi
 
       - name: Publish GitHub release asset
         env:

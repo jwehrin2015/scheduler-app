@@ -74,4 +74,4 @@ migrations automatically when it starts.
 
 The **Build and test** workflow runs on pushes to `main`/`master`, pull requests, and manual dispatch. It builds the .NET API and Angular frontend and runs the frontend unit tests.
 
-Push a version tag such as `v1.0.0` to run the **Publish release package** workflow. After build and test pass, it publishes a ZIP containing the API, production frontend, and [release instructions](release/README.md), then attaches it to a GitHub Release. The package requires the .NET 10 runtime and Python 3; see its included README for startup instructions.
+Push a version tag such as `v1.0.0` on a commit in the `main` branch to run the **Publish release package** workflow. Tags pointing to commits outside `main` are skipped. After build and test pass, it publishes a ZIP containing the API, production frontend, and [release instructions](release/README.md), then attaches it to a GitHub Release. The package requires the .NET 10 runtime and Python 3; see its included README for startup instructions.
