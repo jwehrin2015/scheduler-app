@@ -41,7 +41,9 @@ jobs:
           dotnet restore backend.Tests/SchedulerApp.Api.Tests.csproj
 
       - name: Build API
-        run: dotnet build backend/SchedulerApp.Api.csproj --configuration Release --no-restore
+        run: |
+          dotnet build backend/SchedulerApp.Api.csproj --configuration Release --no-restore
+          dotnet build backend/SchedulerApp.Api.Tests.csproj --configuration Release --no-restore
 
       - name: Run backend unit tests
         run: dotnet test backend.Tests/SchedulerApp.Api.Tests.csproj --configuration Release --no-build --logger "trx;LogFileName=backend-tests.trx"
