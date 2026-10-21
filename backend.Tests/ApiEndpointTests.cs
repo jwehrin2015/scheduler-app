@@ -110,6 +110,108 @@ public sealed class ApiEndpointTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetShifts_ReturnsOnlyShiftsWithinRequestedDateRange()
+    {
+        await ResetDatabaseAsync();
+        var employee = await SeedEmployeeAsync(new Employee { FirstName = "Ada", LastName = "Lovelace" });
+        await SeedAsync(
+            new Shift
+            {
+                EmployeeId = employee.Id,
+                Date = new DateOnly(2026, 10, 4),
+                StartTime = new TimeOnly(9, 0),
+                EndTime = new TimeOnly(12, 0)
+            },
+            new Shift
+            {
+                EmployeeId = employee.Id,
+                Date = new DateOnly(2026, 10, 8),
+                StartTime = new TimeOnly(9, 0),
+                EndTime = new TimeOnly(12, 0)
+            },
+            new Shift
+            {
+                EmployeeId = employee.Id,
+                Date = new DateOnly(2026, 10, 12),
+                StartTime = new TimeOnly(9, 0),
+                EndTime = new TimeOnly(12, 0)
+            });
+
+        var response = await _client.GetAsync("/api/shifts?startDate=2026-10-05&endDate=2026-10-11");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var shifts = await response.Content.ReadFromJsonAsync<List<Shift>>();
+        Assert.NotNull(shifts);
+        var shift = Assert.Single(shifts);
+        Assert.Equal(new DateOnly(2026, 10, 8), shift.Date);
+    }
+
+    [Theory]
+    [InlineData("2026-10-12", "2026-10-11")]
+    [InlineData("2026-10-01", "2026-11-13")]
+    public async Task GetShifts_WithInvalidDateRange_ReturnsBadRequest(string startDate, string endDate)
+    {
+        await ResetDatabaseAsync();
+
+        var response = await _client.GetAsync($"/api/shifts?startDate={startDate}&endDate={endDate}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutShift_UpdatesShift_WhenValidAndNonOverlapping()
+    {
+        await ResetDatabaseAsync();
+        var employee = await SeedEmployeeAsync(new Employee { FirstName = "Ada", LastName = "Lovelace" });
+        await SeedAsync(new Shift
+        {
+            EmployeeId = employee.Id,
+            Date = new DateOnly(2026, 10, 8),
+            StartTime = new TimeOnly(9, 0),
+            EndTime = new TimeOnly(12, 0)
+        });
+        using var scope = _factory.Services.CreateScope();
+        var database = scope.ServiceProvider.GetRequiredService<SchedulerDbContext>();
+        var shiftId = await database.Shifts.Select(shift => shift.Id).SingleAsync();
+
+        var response = await _client.PutAsJsonAsync($"/api/shifts/{shiftId}", new ShiftRequest
+        {
+            EmployeeId = employee.Id,
+            Date = new DateOnly(2026, 10, 9),
+            StartTime = new TimeOnly(13, 0),
+            EndTime = new TimeOnly(17, 0)
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updatedShift = await response.Content.ReadFromJsonAsync<Shift>();
+        Assert.NotNull(updatedShift);
+        Assert.Equal(new DateOnly(2026, 10, 9), updatedShift.Date);
+        Assert.Equal(new TimeOnly(13, 0), updatedShift.StartTime);
+    }
+
+    [Fact]
+    public async Task DeleteShift_RemovesExistingShift()
+    {
+        await ResetDatabaseAsync();
+        var employee = await SeedEmployeeAsync(new Employee { FirstName = "Ada", LastName = "Lovelace" });
+        await SeedAsync(new Shift
+        {
+            EmployeeId = employee.Id,
+            Date = new DateOnly(2026, 10, 8),
+            StartTime = new TimeOnly(9, 0),
+            EndTime = new TimeOnly(12, 0)
+        });
+        using var scope = _factory.Services.CreateScope();
+        var database = scope.ServiceProvider.GetRequiredService<SchedulerDbContext>();
+        var shiftId = await database.Shifts.Select(shift => shift.Id).SingleAsync();
+
+        var response = await _client.DeleteAsync($"/api/shifts/{shiftId}");
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.False(await database.Shifts.AnyAsync(shift => shift.Id == shiftId));
+    }
+
+    [Fact]
     public async Task DeleteEmployee_WithAssignedShifts_ReturnsConflict()
     {
         await ResetDatabaseAsync();
