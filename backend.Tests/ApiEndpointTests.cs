@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using SchedulerApp.Api.Data;
 using SchedulerApp.Api.Endpoints;
 using SchedulerApp.Api.Models;
+using SchedulerApp.Api.Services.ShiftService;
 
 namespace SchedulerApp.Api.Tests;
 
@@ -239,13 +240,13 @@ public sealed class ApiEndpointTests : IClassFixture<TestWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var database = scope.ServiceProvider.GetRequiredService<SchedulerDbContext>();
 
-        var missingEmployee = await ShiftsEndpoint.ValidateShiftAsync(
+        var missingEmployee = await ShiftService.ValidateShiftAsync(
             new ShiftRequest { EmployeeId = 999, Date = new DateOnly(2026, 10, 8), StartTime = new TimeOnly(9, 0), EndTime = new TimeOnly(17, 0) },
             database);
         Assert.NotNull(missingEmployee);
         Assert.Equal((int)HttpStatusCode.BadRequest, GetStatusCode(missingEmployee));
 
-        var invalidTime = await ShiftsEndpoint.ValidateShiftAsync(
+        var invalidTime = await ShiftService.ValidateShiftAsync(
             new ShiftRequest { EmployeeId = 1, Date = new DateOnly(2026, 10, 8), StartTime = new TimeOnly(17, 0), EndTime = new TimeOnly(9, 0) },
             database);
         Assert.NotNull(invalidTime);
@@ -268,7 +269,7 @@ public sealed class ApiEndpointTests : IClassFixture<TestWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var database = scope.ServiceProvider.GetRequiredService<SchedulerDbContext>();
 
-        var result = await ShiftsEndpoint.ValidateShiftAsync(
+        var result = await ShiftService.ValidateShiftAsync(
             new ShiftRequest { EmployeeId = employee.Id, Date = new DateOnly(2026, 10, 8), StartTime = new TimeOnly(11, 30), EndTime = new TimeOnly(13, 0) },
             database);
 
@@ -292,7 +293,7 @@ public sealed class ApiEndpointTests : IClassFixture<TestWebApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var database = scope.ServiceProvider.GetRequiredService<SchedulerDbContext>();
 
-        var result = await ShiftsEndpoint.ValidateShiftAsync(
+        var result = await ShiftService.ValidateShiftAsync(
             new ShiftRequest { EmployeeId = employee.Id, Date = new DateOnly(2026, 10, 8), StartTime = new TimeOnly(12, 0), EndTime = new TimeOnly(13, 0) },
             database);
 

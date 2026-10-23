@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using SchedulerApp.Api.Data;
 using SchedulerApp.Api.Endpoints;
+using SchedulerApp.Api.Services.EmployeeService;
 using SchedulerApp.Api.Services.Logging;
+using SchedulerApp.Api.Services.ShiftService;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("Scheduler")
@@ -11,6 +13,8 @@ builder.Services.AddDbContext<SchedulerDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddSingleton<ILoggingService>(_ =>
     new FileLoggingService(Path.Combine(builder.Environment.ContentRootPath, "logs", "scheduler.txt")));
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IShiftService, ShiftService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularDevelopment", policy =>
