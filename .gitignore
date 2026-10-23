@@ -6,4 +6,5 @@
 backend/scheduler.db
 backend/scheduler.db-shm
 backend/scheduler.db-wal
+backend/logs/
 .DS_Store

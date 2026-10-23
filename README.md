@@ -24,6 +24,7 @@ npm start
 ```
 
 Open <http://localhost:4200>. The API creates `backend/scheduler.db` on first start and keeps employee and shift data there between runs.
+API requests are appended to `backend/logs/scheduler.txt` with a UTC timestamp, response status, and elapsed time.
 
 ## VS Code
 
