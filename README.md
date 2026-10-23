@@ -23,11 +23,11 @@ npm install
 npm start
 ```
 
-Open <http://localhost:4200>. The API creates `backend/scheduler.db` on first start and keeps employee and shift data there between runs. When upgrading from the earlier student-roster version, existing students are copied into the employee list.
+Open <http://localhost:4200>. The API creates `backend/scheduler.db` on first start and keeps employee and shift data there between runs.
 
 ## VS Code
 
-Open this folder in VS Code. Use **Run and Debug → Scheduler: API + Angular** to start both apps and open the frontend in Chrome. To build both projects, run the default **build: scheduler** task with **Terminal → Run Build Task**. The **test: frontend** task runs the Angular unit tests.
+Open this folder in VS Code. Use **Run and Debug → Scheduler: API + Angular** to debug the API and open the frontend in Chrome. Stop any existing API process on port 5000 before starting the debug session. To build both projects, run the default **build: scheduler** task with **Terminal → Run Build Task**. The **test: frontend** task runs the Angular unit tests.
 
 ## API
 
@@ -53,8 +53,25 @@ npm run build
 npm test -- --watch=false
 ```
 
+## Database migrations
+
+The API uses Entity Framework Core with SQLite. On startup, it applies pending
+migrations to `backend/scheduler.db` (or to the database configured through the
+`ConnectionStrings:Scheduler` setting).
+
+Restore the repository's EF Core command-line tool and create migrations from
+the repository root:
+
+```sh
+dotnet tool restore
+dotnet ef migrations add DescribeYourChange --project backend/SchedulerApp.Api.csproj --output-dir Data/Migrations
+```
+
+Commit generated migrations with schema changes. The API applies committed
+migrations automatically when it starts.
+
 ## GitHub workflows and releases
 
 The **Build and test** workflow runs on pushes to `main`/`master`, pull requests, and manual dispatch. It builds the .NET API and Angular frontend and runs the frontend unit tests.
 
-Push a version tag such as `v1.0.0` to run the **Publish release package** workflow. After build and test pass, it publishes a ZIP containing the API, production frontend, and [release instructions](release/README.md), then attaches it to a GitHub Release. The package requires the .NET 10 runtime and Python 3; see its included README for startup instructions.
+Push a version tag such as `v1.0.0` on a commit in the `main` branch to run the **Publish release package** workflow. Tags pointing to commits outside `main` are skipped. After build and test pass, it publishes a ZIP containing the API, production frontend, and [release instructions](release/README.md), then attaches it to a GitHub Release. The package requires the .NET 10 runtime and Python 3; see its included README for startup instructions.

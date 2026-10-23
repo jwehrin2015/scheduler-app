@@ -2,12 +2,33 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Scheduler: API + Angular",
-      "type": "pwa-chrome",
+      "name": "Scheduler: API",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build: api",
+      "program": "${workspaceFolder}/backend/bin/Debug/net10.0/SchedulerApp.Api.dll",
+      "args": ["--urls", "http://localhost:5000"],
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Scheduler: Angular",
+      "type": "chrome",
       "request": "launch",
       "url": "http://localhost:4200",
       "webRoot": "${workspaceFolder}/frontend",
-      "preLaunchTask": "run: scheduler"
+      "preLaunchTask": "run: frontend"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Scheduler: API + Angular",
+      "configurations": ["Scheduler: API", "Scheduler: Angular"],
+      "stopAll": true
     }
   ]
 }

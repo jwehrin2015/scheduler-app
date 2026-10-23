@@ -3,8 +3,7 @@ name: Build and test
 on:
   push:
     branches:
-      - main
-      - master
+      - '**'
   pull_request:
   workflow_dispatch:
 
@@ -36,11 +35,18 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Restore API
-        run: dotnet restore backend/SchedulerApp.Api.csproj
+      - name: Restore API and backend tests
+        run: |
+          dotnet restore backend/SchedulerApp.Api.csproj
+          dotnet restore backend.Tests/SchedulerApp.Api.Tests.csproj
 
       - name: Build API
-        run: dotnet build backend/SchedulerApp.Api.csproj --configuration Release --no-restore
+        run: |
+          dotnet build backend/SchedulerApp.Api.csproj --configuration Release --no-restore
+          dotnet build backend.Tests/SchedulerApp.Api.Tests.csproj --configuration Release --no-restore
+
+      - name: Run backend unit tests
+        run: dotnet test backend.Tests/SchedulerApp.Api.Tests.csproj --configuration Release --no-build --logger "trx;LogFileName=backend-tests.trx"
 
       - name: Install frontend dependencies
         working-directory: frontend
